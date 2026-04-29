@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Generate sing-box source JSON
         run: |
@@ -28,6 +28,9 @@ jobs:
 
           src = Path("domains/proxy.txt")
           out = Path("rules/proxy.source.json")
+
+          if not src.exists():
+              raise SystemExit("ERROR: domains/proxy.txt not found")
 
           domains = []
           seen = set()
@@ -82,15 +85,23 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p /tmp/sing-box
-          gh release download \
+          TAG="$(gh release view --repo SagerNet/sing-box --json tagName --jq .tagName)"
+          echo "Latest sing-box tag: $TAG"
+
+          gh release download "$TAG" \
             --repo SagerNet/sing-box \
             --pattern "sing-box-*-linux-amd64.tar.gz" \
             --dir /tmp/sing-box
 
-          tar -xzf /tmp/sing-box/*.tar.gz -C /tmp/sing-box
-          find /tmp/sing-box -type f -name sing-box -exec chmod +x {} \;
+          ARCHIVE="$(find /tmp/sing-box -maxdepth 1 -type f -name 'sing-box-*-linux-amd64.tar.gz' | head -n 1)"
+          echo "Archive: $ARCHIVE"
+
+          tar -xzf "$ARCHIVE" -C /tmp/sing-box
+
           SING_BOX="$(find /tmp/sing-box -type f -name sing-box | head -n 1)"
+          chmod +x "$SING_BOX"
           echo "SING_BOX=$SING_BOX" >> "$GITHUB_ENV"
+
           "$SING_BOX" version
 
       - name: Compile SRS
@@ -102,7 +113,16 @@ jobs:
           ls -lh rules/
 
       - name: Commit generated files
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Build sing-box SRS rule-set"
-          file_pattern: "rules/proxy.source.json rules/proxy.srs"
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add rules/proxy.source.json rules/proxy.srs
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Build sing-box SRS rule-set"
+          git push
