@@ -1,0 +1,108 @@
+name: Build sing-box SRS
+
+on:
+  push:
+    paths:
+      - "domains/proxy.txt"
+      - ".github/workflows/build-srs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate sing-box source JSON
+        run: |
+          mkdir -p rules
+          python3 - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          src = Path("domains/proxy.txt")
+          out = Path("rules/proxy.source.json")
+
+          domains = []
+          seen = set()
+
+          for raw in src.read_text(encoding="utf-8").splitlines():
+              line = raw.strip()
+
+              if not line:
+                  continue
+              if line.startswith("#"):
+                  continue
+
+              if " #" in line:
+                  line = line.split(" #", 1)[0].strip()
+
+              for prefix in ("domain:", "keyword:", "regex:"):
+                  if line.startswith(prefix):
+                      line = line[len(prefix):].strip()
+
+              if line.startswith("*."):
+                  line = line[2:]
+
+              line = line.lower()
+
+              if not re.fullmatch(r"[a-z0-9.-]+\.[a-z0-9-]+", line):
+                  print(f"Skip invalid line: {raw}")
+                  continue
+
+              if line not in seen:
+                  seen.add(line)
+                  domains.append(line)
+
+          rule_set = {
+              "version": 3,
+              "rules": [
+                  {
+                      "domain_suffix": domains
+                  }
+              ]
+          }
+
+          out.write_text(
+              json.dumps(rule_set, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8"
+          )
+
+          print(f"Generated {out} with {len(domains)} domains")
+          PY
+
+      - name: Download latest sing-box
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/sing-box
+          gh release download \
+            --repo SagerNet/sing-box \
+            --pattern "sing-box-*-linux-amd64.tar.gz" \
+            --dir /tmp/sing-box
+
+          tar -xzf /tmp/sing-box/*.tar.gz -C /tmp/sing-box
+          find /tmp/sing-box -type f -name sing-box -exec chmod +x {} \;
+          SING_BOX="$(find /tmp/sing-box -type f -name sing-box | head -n 1)"
+          echo "SING_BOX=$SING_BOX" >> "$GITHUB_ENV"
+          "$SING_BOX" version
+
+      - name: Compile SRS
+        run: |
+          "$SING_BOX" rule-set compile \
+            --output rules/proxy.srs \
+            rules/proxy.source.json
+
+          ls -lh rules/
+
+      - name: Commit generated files
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Build sing-box SRS rule-set"
+          file_pattern: "rules/proxy.source.json rules/proxy.srs"
