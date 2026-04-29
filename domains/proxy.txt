@@ -50,3 +50,5 @@ eaassets-a.akamaihd.net
 custom.biz
 sherlock-report.at
 localizeapi.com
+lolz.live
+lzt.market
