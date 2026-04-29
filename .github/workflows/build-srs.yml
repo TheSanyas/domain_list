@@ -40,6 +40,7 @@ jobs:
 
               if not line:
                   continue
+
               if line.startswith("#"):
                   continue
 
@@ -80,15 +81,14 @@ jobs:
           print(f"Generated {out} with {len(domains)} domains")
           PY
 
-      - name: Download latest sing-box
+      - name: Download pinned sing-box
         env:
           GH_TOKEN: ${{ github.token }}
+          SING_BOX_VERSION: v1.12.17
         run: |
           mkdir -p /tmp/sing-box
-          TAG="$(gh release view --repo SagerNet/sing-box --json tagName --jq .tagName)"
-          echo "Latest sing-box tag: $TAG"
 
-          gh release download "$TAG" \
+          gh release download "$SING_BOX_VERSION" \
             --repo SagerNet/sing-box \
             --pattern "sing-box-*-linux-amd64.tar.gz" \
             --dir /tmp/sing-box
