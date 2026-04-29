@@ -49,3 +49,4 @@ eacom.akamaized.net
 eaassets-a.akamaihd.net
 custom.biz
 sherlock-report.at
+localizeapi.com
