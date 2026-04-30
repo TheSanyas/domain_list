@@ -5,7 +5,7 @@
       "domain_suffix": [
         "hardwaretester.com",
         "mycountrymobile.com",
-        "vilsol.github.io",
+        "github.io",
         "sbox.game",
         "playground.ru",
         "imazing.com",
@@ -60,7 +60,10 @@
         "waves.com",
         "pushbr.com",
         "kino.pub",
-        "2ip.io"
+        "2ip.io",
+        "akamaihd.net",
+        "akamaized.net",
+        "zttbuilds.com"
       ]
     }
   ]
