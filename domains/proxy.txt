@@ -55,3 +55,4 @@ lzt.market
 waves.com
 pushbr.com
 kino.pub
+2ip.io
