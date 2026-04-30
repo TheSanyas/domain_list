@@ -59,3 +59,6 @@ kino.pub
 akamaihd.net
 akamaized.net
 zttbuilds.com
+supercell.com
+sentry.io
+brawlstarsgame.com
