@@ -52,3 +52,4 @@ sherlock-report.at
 localizeapi.com
 lolz.live
 lzt.market
+waves.com
